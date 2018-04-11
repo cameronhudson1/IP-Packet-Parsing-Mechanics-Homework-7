@@ -26,7 +26,14 @@ Parse:
 
 */
 
+/*
+--------------------------------------------------------------------------
+	packetData
+		Struct to define the fields of a packet
+--------------------------------------------------------------------------
+*/
 typedef struct packetData{
+	int length;
 	unsigned char version:4;
 	unsigned char ihl:4;
 	unsigned char tos:8;
@@ -38,25 +45,72 @@ typedef struct packetData{
 	unsigned char protocol:8;
 	unsigned int headerChecksum:16;
 	unsigned int sourceAddress:16;
-	unsigned char* ipAddress;
 } packetData;
 
-void printPacket(packetData* packet, number){
+
+/*
+--------------------------------------------------------------------------
+	printPacket
+		Given a pointer to a packetData object, printPacket prints it in a
+		readable format
+--------------------------------------------------------------------------
+*/
+void printPacket(packetData* packet, int number){
 	printf("==>Packet %d", number);
 }
 
+
+/*
+---------------------------------------------------------------------------
+	parsePacket(FILE* fp)
+		Parses the packet located where the file pointer points
+---------------------------------------------------------------------------
+*/
 packetData* parsePacket(FILE* fp){
 	packetData* packet = malloc(sizeof(packetData));
 	
+	//Read the size of the packet
+	fread(&(packet->length), sizeof(int), 1, fp);	//Read byte length of packet
+	
+	//Read relevant Data from packet
+	char importantData[20];
+	fread(&importantData, 20, 1, fp);
+	
+	//Iterate over useless data (me_irl)
+	if((packet->length) - 20 > 0){
+		char uselessData[(packet->length)-20];
+		fread(&uselessData, (packet->length)-20, 1, fp);	
+	}
+	
+	packet->version = ((importantData[0] & 0xF0) >> 4);
+	packet->ihl = ;
+	packet->tos = ;
+	packet->totalLength = ;
+	packet->identification = ;
+	packet->flags = ;
+	packet -> fragmentOffset = ;
+	packet->ttl = ;
+	packet->protocol = ;
+	packet->headerChecksum = ;
+	packet->sourceAddress = ;
+
+	return packet;
 }
 
+
+/*
+---------------------------------------------------------------------------
+	parseData(FILE* fp)
+		Parses the data from a file into an array of packet pointers
+---------------------------------------------------------------------------
+*/
 packetData** parseData(FILE* fp){
 	//Get number of packets
 	int packets;
 	fread(&packets, 4, 1, fp);
 	
 	//Make an array to hold pointers to all packets
-	packetData** allPackets = malloc(packets);
+	packetData** allPackets = malloc(packets*sizeof(packetData*));
 	
 	for(int i = 0; i < packets; i++){
 		allPackets[i] = parsePacket(fp);
@@ -67,6 +121,12 @@ packetData** parseData(FILE* fp){
 	}
 }
 
+
+/*
+---------------------------------------------------------------------------
+	Main Function
+---------------------------------------------------------------------------
+*/
 int main(int argc, char **argv){
 	if(argc > 1 && argc < 3){		//1 command line args
 		FILE *fp;
