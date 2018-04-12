@@ -58,6 +58,19 @@ typedef struct packetData{
 */
 void printPacket(packetData* packet, int number){
 	printf("==>Packet %d", number);
+	pritnf("Version:\t\t%x (%d)", packet->version, packet->version);
+	printf("IHL (Header Length):\t\t%x (%d)", packet->ihl, packet->ihl);
+	printf("Type of Service (TOS):\t\t%x (%d)", packet->tos, packet->tos);
+	printf("Total Length:\t\t%x (%d)", packet->totalLength, packet->totalLength);
+	printf("Identification:\t\t%x (%d)", packet->identification, packet->identification);
+	printf("IP Flags:\t\t%x (%d)", packet->flags, packet->flags);
+	printf("Fragment Offset:\t\t%x (%d)", packet->fragmentOffset, packet->fragmentOffset);
+	printf("Time To Live (TTL):\t\t%x (%d)", packet->ttl, packet->ttl);
+	printf("Protocol:\t\t%x (%d)", packet->protocol, packet->protocol);
+	printf("Header Checksum:\t\t%x (%d)", packet->headerChecksum, packet->headerChecksum);
+	printf("Source Address:\t\t%x", packet->sourceAddress);
+	printf("Destination Address:\t\t%x", packet->destinationAddress);
+	
 }
 
 
@@ -107,7 +120,7 @@ packetData* parsePacket(FILE* fp){
 		Parses the data from a file into an array of packet pointers
 ---------------------------------------------------------------------------
 */
-packetData** parseData(FILE* fp){
+void parseData(FILE* fp, char* name){
 	//Get number of packets
 	int packets;
 	fread(&packets, 4, 1, fp);
@@ -119,9 +132,15 @@ packetData** parseData(FILE* fp){
 		allPackets[i] = parsePacket(fp);
 	}
 	
+	printf("==== File %s contains %d Packets.\n", name, packets);
 	for(int i = 0; i < packets; i++){
 		printPacket(allPackets[i], i);
 	}
+	
+	for(int i = 0; i < packets; i++){
+		free(allPackets[i]);
+	}
+	free(allPackets);
 }
 
 
@@ -134,7 +153,7 @@ int main(int argc, char **argv){
 	if(argc > 1 && argc < 3){		//1 command line args
 		FILE *fp;
 		if((fp = fopen(argv[1], "rb")) == NULL){
-			packetData** packets = parseData(fp);
+			parseData(fp, argv[1]);
 		}
 		else{
 			fprintf(stderr, "An invalid file was input\n");
