@@ -45,6 +45,7 @@ typedef struct packetData{
 	unsigned char protocol:8;
 	unsigned int headerChecksum:16;
 	unsigned int sourceAddress:16;
+	unsigned int destinationAddress:16;
 } packetData;
 
 
@@ -73,8 +74,8 @@ packetData* parsePacket(FILE* fp){
 	fread(&(packet->length), sizeof(int), 1, fp);	//Read byte length of packet
 	
 	//Read relevant Data from packet
-	char importantData[20];
-	fread(&importantData, 20, 1, fp);
+	char d[20];
+	fread(&d, 20, 1, fp);
 	
 	//Iterate over useless data (me_irl)
 	if((packet->length) - 20 > 0){
@@ -82,17 +83,19 @@ packetData* parsePacket(FILE* fp){
 		fread(&uselessData, (packet->length)-20, 1, fp);	
 	}
 	
-	packet->version = ((importantData[0] & 0xF0) >> 4);
-	packet->ihl = ;
-	packet->tos = ;
-	packet->totalLength = ;
-	packet->identification = ;
-	packet->flags = ;
-	packet -> fragmentOffset = ;
-	packet->ttl = ;
-	packet->protocol = ;
-	packet->headerChecksum = ;
-	packet->sourceAddress = ;
+	packet->version = ((d[0] & 0xF0) >> 4);
+	packet->ihl = ((d[0] & 0x0F));
+	packet->tos = d[1];
+	packet->totalLength = ( ( (int) d[2] << 8) & ( (int) d[3] ) );
+	packet->identification = ( ( (int) d[4] << 8) & ( (int) d[5] ) );
+	int temp = ( (int) d[6] << 8 )& ( (int) d[7] );
+	packet->flags = (char)((temp & 0b1110000000000000) >> 13);
+	packet -> fragmentOffset = (int)(temp & 0b0001111111111111);
+	packet->ttl = d[8];
+	packet->protocol = d[9];
+	packet->headerChecksum =( (int) d[10] << 8 )& ( (int) d[11] );	
+	packet->sourceAddress = ((int)d[12] << 24) & ((int)d[13] << 16) & ((int)d[14] << 8) & ((int)d[15]);
+	packet->destinationAddress = ((int)d[16] << 24) & ((int)d[17] << 16) & ((int)d[18] << 8) & ((int)d[19]);
 
 	return packet;
 }
