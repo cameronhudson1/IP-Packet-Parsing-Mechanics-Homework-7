@@ -57,19 +57,19 @@ typedef struct packetData{
 --------------------------------------------------------------------------
 */
 void printPacket(packetData* packet, int number){
-	printf("==>Packet %d", number);
-	pritnf("Version:\t\t%x (%d)", packet->version, packet->version);
-	printf("IHL (Header Length):\t\t%x (%d)", packet->ihl, packet->ihl);
-	printf("Type of Service (TOS):\t\t%x (%d)", packet->tos, packet->tos);
-	printf("Total Length:\t\t%x (%d)", packet->totalLength, packet->totalLength);
-	printf("Identification:\t\t%x (%d)", packet->identification, packet->identification);
-	printf("IP Flags:\t\t%x (%d)", packet->flags, packet->flags);
-	printf("Fragment Offset:\t\t%x (%d)", packet->fragmentOffset, packet->fragmentOffset);
-	printf("Time To Live (TTL):\t\t%x (%d)", packet->ttl, packet->ttl);
-	printf("Protocol:\t\t%x (%d)", packet->protocol, packet->protocol);
-	printf("Header Checksum:\t\t%x (%d)", packet->headerChecksum, packet->headerChecksum);
-	printf("Source Address:\t\t%x", packet->sourceAddress);
-	printf("Destination Address:\t\t%x", packet->destinationAddress);
+	printf("==>Packet %d\n", number+1);
+	printf("Version:\t\t0x%x (%d)\n", packet->version, packet->version);
+	printf("IHL (Header Length):\t\t0x%x (%d)\n", packet->ihl, packet->ihl);
+	printf("Type of Service (TOS):\t\t0x%x (%d)\n", packet->tos, packet->tos);
+	printf("Total Length:\t\t0x%x (%d)\n", packet->totalLength, packet->totalLength);
+	printf("Identification:\t\t0x%x (%d)\n", packet->identification, packet->identification);
+	printf("IP Flags:\t\t0x%x (%d)\n", packet->flags, packet->flags);
+	printf("Fragment Offset:\t\t0x%x (%d)\n", packet->fragmentOffset, packet->fragmentOffset);
+	printf("Time To Live (TTL):\t\t0x%x (%d)\n", packet->ttl, packet->ttl);
+	printf("Protocol:\t\t0x%x (%d)\n", packet->protocol, packet->protocol);
+	printf("Header Checksum:\t\t0x%x (%d)\n", packet->headerChecksum, packet->headerChecksum);
+	printf("Source Address:\t\t%x\n", packet->sourceAddress);
+	printf("Destination Address:\t\t%x\n", packet->destinationAddress);
 	
 }
 
@@ -87,7 +87,7 @@ packetData* parsePacket(FILE* fp){
 	fread(&(packet->length), sizeof(int), 1, fp);	//Read byte length of packet
 	
 	//Read relevant Data from packet
-	char d[20];
+	unsigned char d[20];
 	fread(&d, 20, 1, fp);
 	
 	//Iterate over useless data (me_irl)
@@ -99,16 +99,19 @@ packetData* parsePacket(FILE* fp){
 	packet->version = ((d[0] & 0xF0) >> 4);
 	packet->ihl = ((d[0] & 0x0F));
 	packet->tos = d[1];
-	packet->totalLength = ( ( (int) d[2] << 8) & ( (int) d[3] ) );
-	packet->identification = ( ( (int) d[4] << 8) & ( (int) d[5] ) );
-	int temp = ( (int) d[6] << 8 )& ( (int) d[7] );
+	packet->totalLength = ( (unsigned int) d[2] << 8) | ( (unsigned int) d[3] );
+	packet->identification = ( ( ( (unsigned int) d[4] ) << 8) + 
+								( (unsigned int) d[5]) );
+	unsigned int temp = ( (unsigned int) d[6] << 8 ) | ( (unsigned int) d[7] );
 	packet->flags = (char)((temp & 0b1110000000000000) >> 13);
-	packet -> fragmentOffset = (int)(temp & 0b0001111111111111);
+	packet -> fragmentOffset = (unsigned int)(temp & 0b0001111111111111);
 	packet->ttl = d[8];
 	packet->protocol = d[9];
-	packet->headerChecksum =( (int) d[10] << 8 )& ( (int) d[11] );	
-	packet->sourceAddress = ((int)d[12] << 24) & ((int)d[13] << 16) & ((int)d[14] << 8) & ((int)d[15]);
-	packet->destinationAddress = ((int)d[16] << 24) & ((int)d[17] << 16) & ((int)d[18] << 8) & ((int)d[19]);
+	packet->headerChecksum =( (unsigned int) d[10] << 8 ) | ( (unsigned int) d[11] );	
+	packet->sourceAddress = ((unsigned int)d[12] << 24) | ((unsigned int)d[13] << 16) | 
+										((unsigned int)d[14] << 8) | ((unsigned int)d[15]);
+	packet->destinationAddress = ((unsigned int)d[16] << 24) | ((unsigned int)d[17] << 16) | 
+											((unsigned int)d[18] << 8) | ((unsigned int)d[19]);
 
 	return packet;
 }
@@ -152,7 +155,7 @@ void parseData(FILE* fp, char* name){
 int main(int argc, char **argv){
 	if(argc > 1 && argc < 3){		//1 command line args
 		FILE *fp;
-		if((fp = fopen(argv[1], "rb")) == NULL){
+		if((fp = fopen(argv[1], "rb")) != NULL){
 			parseData(fp, argv[1]);
 		}
 		else{
