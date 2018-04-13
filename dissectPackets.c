@@ -39,13 +39,19 @@ typedef struct packetData{
 	unsigned char tos:8;
 	unsigned int totalLength:16;
 	unsigned int identification:16;
-	unsigned char flags:3;
+	unsigned char flags:8;
 	unsigned int fragmentOffset:13;
 	unsigned char ttl:8;
 	unsigned char protocol:8;
 	unsigned int headerChecksum:16;
-	unsigned int sourceAddress:16;
-	unsigned int destinationAddress:16;
+	unsigned char sa3:8;
+	unsigned char sa2:8;
+	unsigned char sa1:8;
+	unsigned char sa0:8;
+	unsigned char da3:8;
+	unsigned char da2:8;
+	unsigned char da1:8;
+	unsigned char da0:8;
 } packetData;
 
 
@@ -68,8 +74,8 @@ void printPacket(packetData* packet, int number){
 	printf("Time To Live (TTL):\t\t0x%x (%d)\n", packet->ttl, packet->ttl);
 	printf("Protocol:\t\t0x%x (%d)\n", packet->protocol, packet->protocol);
 	printf("Header Checksum:\t\t0x%x (%d)\n", packet->headerChecksum, packet->headerChecksum);
-	printf("Source Address:\t\t%x\n", packet->sourceAddress);
-	printf("Destination Address:\t\t%x\n", packet->destinationAddress);
+	printf("Source Address:\t\t%i.%i.%i.%i\n", packet->sa3, packet->sa2, packet->sa1, packet->sa0);
+	printf("Destination Address:\t\t%i.%i.%i.%i\n", packet->da3, packet->da2, packet->da1, packet->da0);
 	
 }
 
@@ -96,23 +102,35 @@ packetData* parsePacket(FILE* fp){
 		fread(&uselessData, (packet->length)-20, 1, fp);	
 	}
 	
+	//Get fields for packetData
 	packet->version = ((d[0] & 0xF0) >> 4);
 	packet->ihl = ((d[0] & 0x0F));
 	packet->tos = d[1];
-	packet->totalLength = ( (unsigned int) d[2] << 8) | ( (unsigned int) d[3] );
-	packet->identification = ( ( ( (unsigned int) d[4] ) << 8) + 
-								( (unsigned int) d[5]) );
-	unsigned int temp = ( (unsigned int) d[6] << 8 ) | ( (unsigned int) d[7] );
-	packet->flags = (char)((temp & 0b1110000000000000) >> 13);
-	packet -> fragmentOffset = (unsigned int)(temp & 0b0001111111111111);
+	packet->totalLength = ( (unsigned int) d[2] << 8) 
+								| ( (unsigned int) d[3] );
+	packet->identification = ( ( ( (unsigned int) d[4] ) << 8)
+								| ( (unsigned int) d[5]) );
+	unsigned char temp = (unsigned int) d[6];
+	
+	packet->flags = temp & 0b11100000;
+	packet -> fragmentOffset = ((unsigned int)((temp & 0b00011111) << 8 ) 
+								| (unsigned int)(d[7]));
+	
 	packet->ttl = d[8];
 	packet->protocol = d[9];
-	packet->headerChecksum =( (unsigned int) d[10] << 8 ) | ( (unsigned int) d[11] );	
-	packet->sourceAddress = ((unsigned int)d[12] << 24) | ((unsigned int)d[13] << 16) | 
-										((unsigned int)d[14] << 8) | ((unsigned int)d[15]);
-	packet->destinationAddress = ((unsigned int)d[16] << 24) | ((unsigned int)d[17] << 16) | 
-											((unsigned int)d[18] << 8) | ((unsigned int)d[19]);
-
+	packet->headerChecksum =( (unsigned int) d[10] << 8 )
+								| ( (unsigned int) d[11] );	
+	
+	packet->sa3 = (unsigned char) d[12];
+	packet->sa2 = (unsigned char) d[13];
+	packet->sa1 = (unsigned char) d[14];
+	packet->sa0 = (unsigned char) d[15];
+	
+	packet->da3 = (unsigned char) d[16];
+	packet->da2 = (unsigned char) d[17];
+	packet->da1 = (unsigned char) d[18];
+	packet->da0 = (unsigned char) d[19];
+		
 	return packet;
 }
 
