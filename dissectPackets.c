@@ -72,7 +72,7 @@ void printPacket(packetData* packet, int number){
 	printf("IP Flags:\t\t0x%x (%d)\n", packet->flags, packet->flags);
 	printf("Fragment Offset:\t\t0x%x (%d)\n", packet->fragmentOffset, packet->fragmentOffset);
 	printf("Time To Live (TTL):\t\t0x%x (%d)\n", packet->ttl, packet->ttl);
-	printf("Protocol:\t\t0x%x (%d)\n", packet->protocol, packet->protocol);
+	printf("Protocol:\t\tTCP 0x%x (%d)\n", packet->protocol, packet->protocol);
 	printf("Header Checksum:\t\t0x%x (%d)\n", packet->headerChecksum, packet->headerChecksum);
 	printf("Source Address:\t\t%i.%i.%i.%i\n", packet->sa3, packet->sa2, packet->sa1, packet->sa0);
 	printf("Destination Address:\t\t%i.%i.%i.%i\n", packet->da3, packet->da2, packet->da1, packet->da0);
@@ -90,7 +90,7 @@ packetData* parsePacket(FILE* fp){
 	packetData* packet = malloc(sizeof(packetData));
 	
 	//Read the size of the packet
-	fread(&(packet->length), sizeof(int), 1, fp);	//Read byte length of packet
+	fread(&(packet->length), sizeof(int), 1, fp);
 	
 	//Read relevant Data from packet
 	unsigned char d[20];
@@ -141,10 +141,13 @@ packetData* parsePacket(FILE* fp){
 		Parses the data from a file into an array of packet pointers
 ---------------------------------------------------------------------------
 */
-void parseData(FILE* fp, char* name){
+int parseData(FILE* fp, char* name){
 	//Get number of packets
 	int packets;
-	fread(&packets, 4, 1, fp);
+	if(fread(&packets, 4, 1, fp ) == 0){
+		fprintf(stderr, "Failed to read count of packets.\n");
+		return 1;
+	}
 	
 	//Make an array to hold pointers to all packets
 	packetData** allPackets = malloc(packets*sizeof(packetData*));
@@ -174,14 +177,14 @@ int main(int argc, char **argv){
 	if(argc > 1 && argc < 3){		//1 command line args
 		FILE *fp;
 		if((fp = fopen(argv[1], "rb")) != NULL){
-			parseData(fp, argv[1]);
+			int m = parseData(fp, argv[1]);
 		}
 		else{
-			fprintf(stderr, "An invalid file was input\n");
+			fprintf(stderr, "Failed to open input file: No such file or directory\n");
 		}		
 	}
 	else{							//Not enough or too many command line args
-		fprintf(stderr, "Invalid number of command line arguments\n");
+		fprintf(stderr, "usage: dissectPackets inputFile\n");
 	}
 	return 0;
 }
